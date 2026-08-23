@@ -1,0 +1,50 @@
+{
+  "variables": {
+    "gcp_zone": "asia-south2-a"
+  },
+  "builders": [
+    {
+      "type": "googlecompute",
+      "project_id": "wise-trainer-244916",
+      "source_image_family": "rocky-linux-9",
+      "zone": "{{user `gcp_zone`}}",
+      "machine_type": "n1-standard-1",
+      "image_name": "release-image-{{timestamp}}",
+      "ssh_username": "packer",
+      "disk_size": 20,
+      "image_family": "rocky-linux-9-v20260813",
+      "preemptible": true,
+      "instance_termination_action": "DELETE",
+      "labels": {
+        "environment": "dev",
+        "managed-by": "packer",
+        "dept": "devops",
+        "os": "rocky-linux-9",
+        "description": "packer-tomcat-{{timestamp}}"
+      }
+    }
+  ],
+  "provisioners": [
+     {
+      "type": "file",
+      "source": "./target/LoginWebApp.war",
+      "destination": "/tmp/"
+     }, 
+     {
+      "type": "shell",
+      "inline": [
+        "sudo yum install -y epel-release",
+        "sudo yum install -y ansible"
+      ]
+    },
+    {
+      "type": "ansible-local",
+      "playbook_file": "playbook.yaml" ,
+      "pause_before": "100s"
+    },
+    {
+      "type": "shell",
+      "inline": [ "sudo cp /tmp/LoginWebApp.war /opt/apache-tomcat-10.1.57/webapps/"]
+    }
+  ]
+}
