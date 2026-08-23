@@ -1,0 +1,33 @@
+default:
+  tags:
+  - gitlab-runner-1
+
+stages:
+  - build
+  - deployment
+
+build_job:
+  stage: build
+  before_script:
+    - export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
+    - export PATH="$PATH:$JAVA_HOME/bin:/opt/apache-maven/bin:/opt/node-v16.0.0/bin:/usr/local/bin"
+  script:
+    - echo "Building artifact..."
+    - mvn clean install
+  artifacts:
+    paths:
+      - target/*.war
+
+deploy_application:
+  stage: deployment
+  before_script:
+    - export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
+    - export PATH="$PATH:$JAVA_HOME/bin:/opt/apache-maven/bin:/opt/node-v16.0.0/bin:/usr/local/bin"
+    - mvn clean install
+  script:
+    - packer plugins install github.com/hashicorp/googlecompute
+    - packer plugins install github.com/hashicorp/ansible
+    - chmod +x create-infra.sh
+    - sh create-infra.sh
+  dependencies:
+    - build_job
